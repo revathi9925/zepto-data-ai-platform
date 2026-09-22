@@ -1,31 +1,50 @@
+import os
+import chromadb
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Initialize text splitter
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=300,
-    chunk_overlap=50
-)
+def ingest_documents():
+    # Initialize ChromaDB client
+    client = chromadb.PersistentClient(path="./chroma_db")
+    collection = client.get_or_create_collection(name="zepto_support")
 
-# When processing your files:
-documents = []
-metadatas = []
-ids = []
+    # Initialize text splitter for chunking
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=300,
+        chunk_overlap=50
+    )
 
-for file_path in doc_files:
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read().strip()
-    
-    # Split the document content into smaller chunks
-    chunks = text_splitter.split_text(content)
-    
-    for i, chunk in enumerate(chunks):
-        documents.append(chunk)
-        metadatas.append({"source": file_path, "chunk_id": i})
-        ids.append(f"{file_path}_chunk_{i}")
+    docs_dir = "./docs"
+    if not os.path.exists(docs_dir):
+        print(f"Directory {docs_dir} not found.")
+        return
 
-# Add the chunked documents to ChromaDB collection
-collection.add(
-    documents=documents,
-    metadatas=metadatas,
-    ids=ids
-)
+    documents = []
+    metadatas = []
+    ids = []
+
+    for filename in os.listdir(docs_dir):
+        if filename.endswith(".txt"):
+            file_path = os.path.join(docs_dir, filename)
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            
+            # Split document into chunks
+            chunks = text_splitter.split_text(content)
+            
+            for i, chunk in enumerate(chunks):
+                documents.append(chunk)
+                metadatas.append({"source": filename, "chunk_id": i})
+                ids.append(f"{filename}_chunk_{i}")
+
+    if documents:
+        collection.add(
+            documents=documents,
+            metadatas=metadatas,
+            ids=ids
+        )
+        print(f"Successfully ingested {len(documents)} chunks into ChromaDB.")
+    else:
+        print("No documents found to ingest.")
+
+if __name__ == "__main__":
+    ingest_documents()
