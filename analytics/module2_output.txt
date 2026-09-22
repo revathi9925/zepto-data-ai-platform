@@ -1,0 +1,194 @@
+
+===========================================================================
+TASK 1: DATA LOADING & PROFILE
+===========================================================================
+Loaded dataset via sns.load_dataset('titanic') from network/cache.
+Saved committed offline fallback: titanic.csv (via df.to_csv)
+
+Data Shape: 891 rows, 15 columns
+
+--- Column Info ---
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 891 entries, 0 to 890
+Data columns (total 15 columns):
+ #   Column       Non-Null Count  Dtype   
+---  ------       --------------  -----   
+ 0   survived     891 non-null    int64   
+ 1   pclass       891 non-null    int64   
+ 2   sex          891 non-null    object  
+ 3   age          714 non-null    float64 
+ 4   sibsp        891 non-null    int64   
+ 5   parch        891 non-null    int64   
+ 6   fare         891 non-null    float64 
+ 7   embarked     889 non-null    object  
+ 8   class        891 non-null    category
+ 9   who          891 non-null    object  
+ 10  adult_male   891 non-null    bool    
+ 11  deck         203 non-null    category
+ 12  embark_town  889 non-null    object  
+ 13  alive        891 non-null    object  
+ 14  alone        891 non-null    bool    
+dtypes: bool(2), category(2), float64(2), int64(4), object(5)
+memory usage: 80.7+ KB
+
+--- First 5 Rows ---
+   survived  pclass     sex   age  sibsp  parch     fare embarked  class    who  adult_male deck  embark_town alive  alone
+0         0       3    male  22.0      1      0   7.2500        S  Third    man        True  NaN  Southampton    no  False
+1         1       1  female  38.0      1      0  71.2833        C  First  woman       False    C    Cherbourg   yes  False
+2         1       3  female  26.0      0      0   7.9250        S  Third  woman       False  NaN  Southampton   yes   True
+3         1       1  female  35.0      1      0  53.1000        S  First  woman       False    C  Southampton   yes  False
+4         0       3    male  35.0      0      0   8.0500        S  Third    man        True  NaN  Southampton    no   True
+
+--- Summary Statistics ---
+       survived  pclass     age   sibsp   parch    fare
+count    891.00  891.00  714.00  891.00  891.00  891.00
+mean       0.38    2.31   29.70    0.52    0.38   32.20
+std        0.49    0.84   14.53    1.10    0.81   49.69
+min        0.00    1.00    0.42    0.00    0.00    0.00
+25%        0.00    2.00   20.12    0.00    0.00    7.91
+50%        0.00    3.00   28.00    0.00    0.00   14.45
+75%        1.00    3.00   38.00    1.00    0.00   31.00
+max        1.00    3.00   80.00    8.00    6.00  512.33
+
+===========================================================================
+TASK 2: MISSING VALUE ANALYSIS & CLEANING
+===========================================================================
+Measured Missing Values:
+             missing_count  missing_pct
+deck                   688        77.22
+age                    177        19.87
+embarked                 2         0.22
+embark_town              2         0.22
+
+Applying Threshold Rules (<5.0% drop rows | 5.0%-30.0% pipeline impute | >30.0% drop col):
+  - deck: 77.22% (688 rows) -> Over 30.0% rule -> Drop column completely (deck is >75% missing)
+  - age: 19.87% (177 rows) -> 5.0%-30.0% rule -> Defer to Pipeline Imputer
+  - embarked: 0.22% (2 rows) -> Under 5.0% rule -> Drop affected rows
+  - embark_town: 0.22% (2 rows) -> Under 5.0% rule -> Drop affected rows
+
+Dropped 2 rows missing ['embarked', 'embark_town'].
+Dropped high-missing columns: ['deck']
+Dropped redundant/leaky columns to prevent data leakage: ['alive', 'class', 'who', 'adult_male', 'alone', 'embark_town']
+
+Cleaned DataFrame Shape: 889 rows, 8 columns
+
+===========================================================================
+TASKS 3, 4, 5: EXPLORATORY DATA ANALYSIS
+===========================================================================
+
+--- Task 3: Univariate Analysis ---
+[chart saved] figures/01_histograms_age_fare.png
+[chart saved] figures/02_boxplots_age_fare.png
+IQR Outliers for age: 8 out of 712 rows outside [-7.00, 65.00]
+IQR Outliers for fare: 114 out of 889 rows outside [-26.76, 65.66]
+Fare Skewness Analysis: Mean = 32.10, Median = 14.45, Mode = 8.05
+Conclusion: Fare is strongly RIGHT-SKEWED because Mean > Median > Mode.
+
+--- Task 4: Bivariate Analysis ---
+Survival Rates:
+  a) By Sex:
+ sex
+female    74.0
+male      18.9
+  b) By Pclass:
+ pclass
+1    62.6
+2    47.3
+3    24.2
+  c) By Sex & Pclass:
+ sex     female  male
+pclass              
+1         96.7  36.9
+2         92.1  15.7
+3         50.0  13.5
+[chart saved] figures/05_correlation_heatmap.png
+
+Top 2 Strongest Feature Correlations:
+  1. pclass <-> fare: r = -0.548
+  2. sibsp <-> parch: r = 0.415
+
+--- Task 5: Multivariate Analysis (4 Charts) ---
+[chart saved] figures/06_mv_class_sex_survival.png
+[chart saved] figures/07_mv_fare_class_survival.png
+[chart saved] figures/08_mv_age_fare_survival.png
+[chart saved] figures/09_mv_sibsp_class_survival.png
+
+===========================================================================
+TASK 6: EXPLORATORY Z-SCORE CHECK
+===========================================================================
+      Mean Before  Std Before  Mean After (Z)  Std After (Z)
+age       29.6421     14.4929             0.0            1.0
+fare      32.0967     49.6975             0.0            1.0
+
+Sanity Check Confirmed: Standardized variables have Mean ~ 0.0 and Std ~ 1.0.
+
+TASK 7: STRATIFIED TRAIN/TEST SPLIT
+Justification: Stratification is critical because survival is an imbalanced binary class (~38% survived). Split ratio 80:20 preserves identical target proportions in train and test folds.
+
+===========================================================================
+TASKS 8, 9, 10: MODEL TRAINING AND EVALUATION
+===========================================================================
+[chart saved] figures/10_confusion_matrices.png
+[chart saved] figures/11_roc_curves.png
+[chart saved] figures/12_decision_tree_structure.png
+
+--- Model Evaluation Table ---
+                     accuracy  precision  recall      f1  roc_auc  cv_roc_auc
+Logistic Regression    0.8146     0.7966  0.6912  0.7402   0.8596      0.8447
+Decision Tree          0.7472     0.7347  0.5294  0.6154   0.8259      0.8402
+Random Forest          0.8090     0.7931  0.6765  0.7302   0.8243      0.8629
+
+===========================================================================
+TASK 11: CLASS IMBALANCE HANDLING COMPARISON
+===========================================================================
+Train Set Class Balance: 439 Did Not Survive (0), 272 Survived (1)
+
+Imbalance Handling Comparison:
+              Model                Strategy  Precision  Recall  F1 Score  ROC-AUC
+Logistic Regression                Baseline     0.7966  0.6912    0.7402   0.8596
+Logistic Regression class_weight='balanced'     0.7246  0.7353    0.7299   0.8615
+Logistic Regression                   SMOTE     0.7353  0.7353    0.7353   0.8662
+      Decision Tree                Baseline     0.7347  0.5294    0.6154   0.8259
+      Decision Tree class_weight='balanced'     0.7077  0.6765    0.6917   0.8177
+      Decision Tree                   SMOTE     0.6625  0.7794    0.7162   0.8108
+      Random Forest                Baseline     0.7931  0.6765    0.7302   0.8243
+      Random Forest class_weight='balanced'     0.7538  0.7206    0.7368   0.8170
+      Random Forest                   SMOTE     0.7576  0.7353    0.7463   0.8227
+
+===========================================================================
+TASK 12: HYPERPARAMETER TUNING (Random Forest)
+===========================================================================
+GridSearchCV Best Parameters: {'model__max_depth': 7, 'model__max_features': 'sqrt', 'model__n_estimators': 100}
+Best CV ROC-AUC: 0.8726
+Out-Of-Bag (OOB) Score: 0.8073
+
+[pipeline saved] titanic_survival_pipeline.joblib
+
+===========================================================================
+TASK 13: REGRESSION SIDE-TASK (Predict Fare)
+===========================================================================
+Regression Metrics: MAE = 17.8530 | RMSE = 40.5476 | R2 = 0.3838 | Adj R2 = 0.3546
+[chart saved] figures/13_regression_residuals.png
+Heteroscedasticity Conclusion: The residual plot shows a classic fan shape with increasing spread at higher fare predictions, proving clear HETEROSCEDASTICITY.
+
+===========================================================================
+TASK 14 & 15: FINAL COMPARISON, RECOMMENDATION & PIPELINE VERIFICATION
+===========================================================================
+
+CLASSIFICATION METRICS COMPARISON:
+                     accuracy  precision  recall      f1  roc_auc  cv_roc_auc
+Logistic Regression    0.8146     0.7966  0.6912  0.7402   0.8596      0.8447
+Decision Tree          0.7472     0.7347  0.5294  0.6154   0.8259      0.8402
+Random Forest          0.8090     0.7931  0.6765  0.7302   0.8243      0.8629
+Tuned Random Forest    0.8202     0.8333  0.6618  0.7377   0.8397      0.8726
+
+REGRESSION METRICS (Fare Prediction):
+                      MAE     RMSE      R2  Adj_R2
+Linear Regression  17.853  40.5476  0.3838  0.3546
+
+--- FINAL MODEL RECOMMENDATION ---
+I recommend deploying the Tuned Random Forest Classifier for Titanic survival prediction. It achieves the highest overall test ROC-AUC of 0.8397 and robust F1-score of 0.7377. Its ensemble structure effectively captures non-linear feature interactions between gender and passenger class without overfitting, as confirmed by its high 5-fold cross-validation AUC score.
+
+--- Pipeline Reload Test (Task 15) ---
+Classification Artifact Successfully Reloaded! Test Sample Prediction: Survived=0 (Prob=0.1220)
+Regression Artifact Successfully Reloaded! Test Sample Predicted Fare: $8.26

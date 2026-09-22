@@ -1,0 +1,141 @@
+======================================================================
+ZEPTO DATA & AI PLATFORM — MODULE 1: DATA PIPELINE
+======================================================================
+Data source: https://books.toscrape.com/
+GBP to INR conversion: 1 GBP = 105.50 INR
+
+======================================================================
+COLLECTION VALIDATION
+======================================================================
+Books collected       : 69
+Categories represented: 3
+Categories            : Historical Fiction, Mystery, Travel
+60+ books requirement : PASS
+3+ categories         : PASS
+
+SQLite database created: zepto_catalog.db
+
+======================================================================
+QUERY 1 — SELECT / WHERE / ORDER BY / LIMIT
+======================================================================
+SELECT
+                title,
+                price_gbp,
+                price_inr,
+                star_rating
+            FROM books
+            WHERE star_rating >= 4
+            ORDER BY price_gbp DESC
+            LIMIT 5;
+
+                                               title  price_gbp  price_inr  star_rating
+0  The No. 1 Ladies' Detective Agency (No. 1 Ladi...      57.70    6087.35            4
+1                   A Year in Provence (Provence #1)      56.88    6000.84            4
+2                                The Past Never Ends      56.50    5960.75            4
+3            A Flight of Arrows (The Pathfinders #2)      55.53    5858.42            5
+4  Murder at the 42nd Street Library (Raymond Amb...      54.36    5734.98            4
+
+======================================================================
+QUERY 2 — DISTINCT
+======================================================================
+SELECT DISTINCT
+                star_rating
+            FROM books
+            ORDER BY star_rating;
+
+   star_rating
+0            1
+1            2
+2            3
+3            4
+4            5
+
+======================================================================
+QUERY 3 — BETWEEN
+======================================================================
+SELECT
+                title,
+                price_gbp,
+                price_inr
+            FROM books
+            WHERE price_gbp BETWEEN 15 AND 35
+            ORDER BY price_gbp
+            LIMIT 5;
+
+                                               title  price_gbp  price_inr
+0          The Girl In The Ice (DCI Erika Foster #1)      15.85    1672.18
+1         The Constant Princess (The Tudor Court #1)      16.62    1753.41
+2                                   A Murder in Time      16.64    1755.52
+3            A Study in Scarlet (Sherlock Holmes #1)      16.73    1765.02
+4  A Spy's Devotion (The Regency Spies of London #1)      16.97    1790.33
+
+======================================================================
+QUERY 4 — JOIN
+======================================================================
+SELECT
+                b.book_id,
+                b.title,
+                b.price_gbp,
+                b.price_inr,
+                b.star_rating,
+                c.category_name
+            FROM books AS b
+            JOIN categories AS c
+                ON b.category_id = c.category_id
+            ORDER BY b.book_id
+            LIMIT 5;
+
+   book_id                                              title  price_gbp  price_inr  star_rating category_name
+0        1                            It's Only the Himalayas      45.17    4765.44            2        Travel
+1        2  Full Moon over Noah’s Ark: An Odyssey to Mount...      49.43    5214.86            4        Travel
+2        3  See America: A Celebration of Our National Par...      48.87    5155.78            3        Travel
+3        4  Vagabonding: An Uncommon Guide to the Art of L...      36.94    3897.17            2        Travel
+4        5                               Under the Tuscan Sun      37.33    3938.31            3        Travel
+
+======================================================================
+QUERY 5 — JOIN + GROUP BY + AVG + COUNT
+======================================================================
+SELECT
+                c.category_name,
+                ROUND(AVG(b.price_inr), 2) AS avg_price_inr,
+                COUNT(*) AS total_books
+            FROM books AS b
+            JOIN categories AS c
+                ON b.category_id = c.category_id
+            GROUP BY c.category_name
+            ORDER BY avg_price_inr DESC;
+
+        category_name  avg_price_inr  total_books
+0              Travel        4198.32           11
+1  Historical Fiction        3549.47           26
+2             Mystery        3346.36           32
+
+======================================================================
+JOIN VIA SQL  ->  pd.read_sql_query(...)  (first 5 rows)
+======================================================================
+   book_id                                              title  price_gbp  price_inr  star_rating category_name
+0        1                            It's Only the Himalayas      45.17    4765.44            2        Travel
+1        2  Full Moon over Noah’s Ark: An Odyssey to Mount...      49.43    5214.86            4        Travel
+2        3  See America: A Celebration of Our National Par...      48.87    5155.78            3        Travel
+3        4  Vagabonding: An Uncommon Guide to the Art of L...      36.94    3897.17            2        Travel
+4        5                               Under the Tuscan Sun      37.33    3938.31            3        Travel
+
+======================================================================
+JOIN VIA PANDAS  ->  pd.merge(...)  (first 5 rows)
+======================================================================
+   book_id                                              title  price_gbp  price_inr  star_rating category_name
+0        1                            It's Only the Himalayas      45.17    4765.44            2        Travel
+1        2  Full Moon over Noah’s Ark: An Odyssey to Mount...      49.43    5214.86            4        Travel
+2        3  See America: A Celebration of Our National Par...      48.87    5155.78            3        Travel
+3        4  Vagabonding: An Uncommon Guide to the Art of L...      36.94    3897.17            2        Travel
+4        5                               Under the Tuscan Sun      37.33    3938.31            3        Travel
+
+======================================================================
+PANDAS MERGE VALIDATION
+======================================================================
+[PASS] pandas.merge() matches the SQL JOIN output.
+
+======================================================================
+MODULE 1 SUBMISSION CHECK: PASS
+======================================================================
+Database created: zepto_catalog.db
